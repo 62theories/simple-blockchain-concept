@@ -38,6 +38,15 @@
             <textarea
               class="form-control"
               :value="block.previous_hash"
+              @input="inputPrevHash($event, index)"
+              rows="5"
+            />
+          </div>
+          <div class="form-group">
+            <label>hash</label>
+            <textarea
+              class="form-control"
+              :value="block.hash"
               disabled
               rows="5"
             />
@@ -90,34 +99,86 @@ export default {
           };
         }
       });
+    },
+    inputPrevHash({ target: { value } }, index) {
+      this.blockchain = this.blockchain.map((block, indexOfArr) => {
+        if (indexOfArr === index) {
+          return {
+            ...block,
+            previous_hash: value
+          };
+        } else {
+          return {
+            ...block
+          };
+        }
+      });
     }
   },
   computed: {
     blockWithVerify() {
-      let previous_hash = sha256(JSON.stringify(this.blockchain[0]));
+      let newCalculate = this.blockchain.reduce((acc, cur, index, arr) => {
+        if (index === 0) {
+          return [cur];
+        } else {
+          return [
+            ...acc,
+            {
+              ...cur,
+              previous_hash: sha256(JSON.stringify(acc[index - 1]))
+            }
+          ];
+        }
+      }, []);
       return this.blockchain.map((block, index) => {
         if (index === 0) {
           return {
             ...block,
+            hash: sha256(JSON.stringify(block)),
             isValid: true
           };
         } else {
-          if (block.previous_hash !== previous_hash) {
-            previous_hash = sha256(JSON.stringify({ ...block, previous_hash }));
+          if (newCalculate[index].previous_hash === block.previous_hash) {
             return {
               ...block,
-              isValid: false
+              hash: sha256(JSON.stringify(block)),
+              isValid: true
             };
           } else {
-            previous_hash = sha256(JSON.stringify({ ...block, previous_hash }));
             return {
               ...block,
-              isValid: true
+              hash: sha256(JSON.stringify(block)),
+              isValid: false
             };
           }
         }
       });
     }
+    // blockWithVerify() {
+    //   let previous_hash = sha256(JSON.stringify(this.blockchain[0]));
+    //   return this.blockchain.map((block, index) => {
+    //     if (index === 0) {
+    //       return {
+    //         ...block,
+    //         isValid: true
+    //       };
+    //     } else {
+    //       if (block.previous_hash !== previous_hash) {
+    //         previous_hash = sha256(JSON.stringify({ ...block, previous_hash }));
+    //         return {
+    //           ...block,
+    //           isValid: false
+    //         };
+    //       } else {
+    //         previous_hash = sha256(JSON.stringify({ ...block, previous_hash }));
+    //         return {
+    //           ...block,
+    //           isValid: true
+    //         };
+    //       }
+    //     }
+    //   });
+    // }
   }
 };
 </script>
